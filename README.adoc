@@ -1,0 +1,12 @@
+:icons: font
+:sectanchors:
+:toc: left
+:toclevels: 2
+:toc-title: Table of Content
+:numbered:
+:source-highlighter: highlight.js
+= Keylcoak Workshop
+
+toc::[]
+
+== Setting up a new Realm
