@@ -10,3 +10,5 @@
 toc::[]
 
 == Setting up a new Realm
+
+image::images/initAdmin.png[]
