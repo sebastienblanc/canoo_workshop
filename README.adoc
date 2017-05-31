@@ -205,6 +205,30 @@ image::images/defaultRole.png[]
 
 In the Role section, you have a `Default Roles` tab, from there you can choose the default roles.
 
+==== Making the Client Confidential
+
+Since we have a Server Side Application we can make it Confidential to add an extra security.
+
+Go to your Keycloak Web Console and select your `product-app` client and change the `access type` to `confidential` and save.
+
+You will notice now that you have an extra tab `Credentials` , go there are copy your `secret` :
+
+image::images/confidential.png[]
+
+Add this `secret` to your application properties :
+
+[source, bash]
+----
+
+keycloak.credentials.secret=your_secret
+
+----
+
+Also remove the property `keycloak.public-client=true`
+
+[NOTE]
+Instead of using a `secret` it is also possible to use a signed JWT but this needs a bit more configuration. Check the documentation for more details.
+
 ==== Enabling Spring Security
 
 Keycloak has also support for Spring Security and fits perfectly with the Spring Boot Adapter.
