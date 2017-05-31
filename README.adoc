@@ -5,7 +5,7 @@
 :toc-title: Table of Content
 :numbered:
 :source-highlighter: highlight.js
-= Keylcoak Workshop
+= Keycloak Workshop
 
 toc::[]
 
@@ -20,7 +20,7 @@ We run it with a port offset of 100 to make sure we don't conflict with 8080 for
 
 == Creating the initial Admin user
 
-Browse to `http://localhost:8180/auth` and you will be see this screen :
+Browse to `http://localhost:8180/auth` and you will see this screen :
 
 image::images/initAdmin.png[]
 
@@ -32,7 +32,7 @@ Now you can access the Keycloak Web Console
 
 A good practice is to create a new Realm but you could keep doing this workshop on the `master` Realm.
 
-You can name your realm as you want, in this workshop I will use `canoo`
+You can name the realm as you want, in this workshop I will use `canoo`
 
 image::images/newRealm.png[]
 
@@ -41,7 +41,7 @@ image::images/newRealm.png[]
  * Now we need to define a client, which will be our Spring Boot app. Go to the “Clients” section and click the “create” button. We will call our client “product-app”:
  * On the next screen, we can keep the defaults settings but just need to enter a valid redirect URL that Keycloak will use once the user is authenticated. Put as value: `http://localhost:8081/*`
 
-[NOTE]
+[WARNING]
 Don't forget to save !
 
 Now, we will define a role that will be assigned to our users, let’s create a simple role called `user` :
@@ -70,12 +70,12 @@ image::images/sbpage.png[]
 
 Import the application in your favorite IDE, I will be using IntelliJ.
 
-Our app will be simple and will contain only 2 pages:
+Our app will contain only 2 pages:
 
-* An index.html which will be the landing page containing just a link to the product page.
-* Products.ftl which will be our product page template and will be only accessible for authenticated user.
+* An `index.html` which will be the landing page containing just a link to the product page.
+* `products.ftl` which will be our product page template and will be only accessible for authenticated user.
 
-Let’s start by creating in simple index.html file in `/src/resources/static`:
+Let’s start by creating in simple `index.html` file in `/src/resources/static`:
 
 [source, html]
 ----
@@ -126,7 +126,7 @@ class ProductController {
 
 ----
 
-Final missing piece before you configure Keycloak is the product template, create this file in `sec/resources/templates` :
+The final missing piece before you configure Keycloak is the product template, create this file in `sec/resources/templates` :
 
 [source, html]
 ----
