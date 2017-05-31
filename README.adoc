@@ -206,3 +206,280 @@ image::images/defaultRole.png[]
 In the Role section, you have a `Default Roles` tab, from there you can choose the default roles.
 
 ==== Enabling Spring Security
+
+Keycloak has also support for Spring Security and fits perfectly with the Spring Boot Adapter.
+
+Let's start by adding the Spring Security bits :
+
+[source, xml]
+----
+
+<dependency>
+   <groupId>org.springframework.boot</groupId>
+   <artifactId>spring-boot-starter-security</artifactId>
+</dependency>
+
+----
+
+===== Creating a SecurityConfig class
+
+Like any other project that is secured with Spring Security, a configuration class extending WebSecurityConfigurerAdapter is needed. Keycloak provides its own subclass that you can again subclass:
+
+[source, java]
+----
+
+@Configuration
+@EnableWebSecurity
+@ComponentScan(basePackageClasses = KeycloakSecurityComponents.class)
+ class SecurityConfig extends KeycloakWebSecurityConfigurerAdapter
+{
+   /**
+    * Registers the KeycloakAuthenticationProvider with the authentication manager.
+    */
+   @Autowired
+   public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
+      KeycloakAuthenticationProvider keycloakAuthenticationProvider = keycloakAuthenticationProvider();
+      keycloakAuthenticationProvider.setGrantedAuthoritiesMapper(new SimpleAuthorityMapper());
+      auth.authenticationProvider(keycloakAuthenticationProvider);
+   }
+
+   @Bean
+   public KeycloakConfigResolver KeycloakConfigResolver() {
+      return new KeycloakSpringBootConfigResolver();
+   }
+
+   /**
+    * Defines the session authentication strategy.
+    */
+   @Bean
+   @Override
+   protected SessionAuthenticationStrategy sessionAuthenticationStrategy() {
+      return new RegisterSessionAuthenticationStrategy(new SessionRegistryImpl());
+   }
+
+   @Override
+   protected void configure(HttpSecurity http) throws Exception
+   {
+      super.configure(http);
+      http
+            .authorizeRequests()
+            .antMatchers("/products*").hasRole("user")
+            .anyRequest().permitAll();
+   }
+}
+
+----
+
+In the property file we can now remove the security constraint that we defined since it's Spring Security that handles this now.
+
+Restart the app and it should just work as before.
+
+===== Injecting the Principal
+
+Just like any other app secured with Spring Security you can easily inject the `Principal` in your controller :
+
+[source, java]
+----
+
+@GetMapping(path = "/products")
+public String getProducts(Principal principal, Model model){
+   model.addAttribute("principal",principal);
+   model.addAttribute("products", productService.getProducts());
+   return "products";
+}
+
+----
+
+And add this to your property file :
+
+[source, bash]
+----
+
+keycloak.principal-attribute=preferred_username
+
+----
+
+And in your template :
+
+[source, html]
+----
+<h1>Hello ${principal.getName()}</h1>
+----
+
+== Decomposing the monolith
+
+Instead of returning a hard coded product list, let's create a new application that will serve this list.
+
+=== Installing and configuring Wildfly
+
+* Download and unzip the latest WildFly distribution link:http://download.jboss.org/wildfly/10.1.0.Final/wildfly-10.1.0.Final.zip[here]
+* Download the Keycloak WildFly Adapter link:https://downloads.jboss.org/keycloak/3.1.0.Final/adapters/keycloak-oidc/keycloak-wildfly-adapter-dist-3.1.0.Final.zip[here]
+* Start the WildFly Server : `bin/standalone.sh -Djboss.socket.binding.port-offset=1`
+
+==== Installing the WildFly Adapter
+
+* Unzip the Adapter Zip at the root of your WidlFly folder
+* Go to the `bin` folder and run : `jboss-cli.sh --file=adapter-install-offline.cli`
+
+Your application server is now ready to host Keycloak Secured Application.
+
+=== Deploying the Product-rest app
+
+Make sure to clone this link:https://github.com/sebastienblanc/canoo_apps[repo] .
+
+Then browse to the `product-rest` folder.
+
+To enable Keycloak in our Java EE app we need to do 2 things :
+
+* Update the `web.xml`
+* Add a `keycloak.json` descriptor file
+
+==== Configuring the `web.xml`
+
+We need to specify the security constraints and also the login config method :
+
+[source, xml]
+----
+
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<web-app xmlns="http://java.sun.com/xml/ns/javaee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="2.5" xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd">
+<display-name>product-rest</display-name>
+  <session-config>
+    <session-timeout>30</session-timeout>
+  </session-config>
+  <login-config>
+    <auth-method>KEYCLOAK</auth-method>
+    <realm-name>canoo</realm-name>
+  </login-config>
+  <security-role>
+    <role-name>user</role-name>
+  </security-role>
+  <security-constraint>
+    <display-name>products</display-name>
+    <web-resource-collection>
+      <web-resource-name>products</web-resource-name>
+      <url-pattern>/rest/products/*</url-pattern>
+    </web-resource-collection>
+    <auth-constraint>
+      <role-name>user</role-name>
+    </auth-constraint>
+  </security-constraint>
+</web-app>
+
+----
+
+Now we need a descriptor for file, let's create it from our Keycloak Web Console.
+
+==== Creating a new Keycloak Client
+
+* Create a new client and call it `product-rest`
+* In the next screen , in `Access Type` , select `bearer-only` :
+
+image::images/bearer.png[]
+
+Now go to the `installation` tab and grab the `json` content.
+
+Add this file to `src/main/webapp/WEB-INF`.
+
+Now you can deploy your app to the application server :
+
+* `mvn clean package`
+* `cp target/product-rest.war your_wf_folder/standalone/deployments`
+
+So, our rest service is now deployed, to make sure it's secured browse to `http://localhost:8081/product-rest/rest/products` , you should have a `Access Denied` error page.
+
+=== Updating the Product App
+
+Now we need to modify our initial application so that it calls the `product-rest` service. We have to make sure it will pass the authorization bearer in the headers.
+
+Luckily, the Keycloak Spring Security Adapter ships a really useful class, the `KeycloakRestTemplate` :
+
+Let's update our Security Config class by adding this :
+
+[source, java]
+----
+
+@Autowired
+public KeycloakClientRequestFactory keycloakClientRequestFactory;
+
+@Bean
+@Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
+public KeycloakRestTemplate keycloakRestTemplate() {
+  return new KeycloakRestTemplate(keycloakClientRequestFactory);
+}
+
+----
+
+Then, we can inject this bean in our service class :
+
+[source, java]
+----
+
+@Autowired
+private KeycloakRestTemplate template;
+
+private String endpoint;
+
+@Override
+public List<String> getProducts() {
+  ResponseEntity<String[]> response = template.getForEntity(endpoint, String[].class);
+  return Arrays.asList(response.getBody());
+}
+
+----
+
+Restart the app and it should just work as before.
+
+== Adding a Web Application
+
+Now that we have a separate rest service, we can built a third application that will consume this service.
+
+Let's see how a Pure Web App can be secured with Keycloak and consume a secured rest service.
+
+From the apps repo browse to the `angular-product-app` folder, this is AngularJS app.
+
+[NOTE]
+For convenience, this app has been wrapped inside a WildFly Swarm Application. But you can put this in any Web Server (Apache, Node, etc...)
+
+=== Creating the `product-web` client
+
+Again, we need to create a new client in the Keycloak Web Console.
+
+In the details screen make sure of this :
+
+* `access Type` must be `public`
+* You need to add a `Valid Redirect URI` : `http://localhost:8082/*`
+* In `Web Origins` add `*` to deal with CORS.
+
+[WARNING]
+Don't forget to save
+
+From the `Installation` tab grab the `keycloak.json` and add it to `src/main/webapp`
+
+=== Enabling CORS support in the `product-rest` services
+
+Before running our Web Application, we need first to enable CORS support in our Rest Service. It's pretty easy, in the `keycloak.json` of the `product-rest` add this :
+
+[source, javascript]
+----
+
+"enable-cors" : true
+
+----
+
+Repackage and redeploy the app.
+
+=== Running the Web Application
+
+Running the Web Application can be done with this command : `mvn clean wildfly-swarm:run`
+
+Access the Web App : `http://localhost:8082` , note that if you open this in a tab of a browser where you were already connected with the `product-app` you won't need to authenticate ;)
+
+
+== Conclusion
+
+I hope you enjoyed this workshop, here is a list of useful resources :
+
+* link:https://www.gitbook.com/book/keycloak/documentation[Keycloak Documentation]
+* link:https://github.com/keycloak/keycloak-quickstarts[Keycloak Quickstarts]
+* link:https://developers.redhat.com/blog/2017/05/25/easily-secure-your-spring-boot-applications-with-keycloak/[Blog Post about Keycloak and Spring Boot]
