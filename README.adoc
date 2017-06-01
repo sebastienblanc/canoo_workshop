@@ -343,8 +343,8 @@ Instead of returning a hard coded product list, let's create a new application t
 ==== Installing the WildFly Adapter
 
 * Unzip the Adapter Zip at the root of your WidlFly folder
-* Go to the `bin` folder and run : `KC_LOCATION/bin/jboss-cli.sh --file=adapter-install-offline.cli`
-* Start the WildFly Server : `KC_LOCATION/bin/standalone.sh -Djboss.socket.binding.port-offset=1`
+* Go to the `bin` folder and run : `jboss-cli.sh --file=adapter-install-offline.cli`
+* Start the WildFly Server : `WL_LOCATION/bin/standalone.sh -Djboss.socket.binding.port-offset=1`
 
 
 Your application server is now ready to host Keycloak Secured Application.
