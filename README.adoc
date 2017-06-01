@@ -126,7 +126,7 @@ class ProductController {
 
 ----
 
-The final missing piece before you configure Keycloak is the product template, create this file in `sec/resources/templates` :
+The final missing piece before you configure Keycloak is the product template (`products.ftl`), create this file in `sec/resources/templates` :
 
 [source, html]
 ----
@@ -294,7 +294,8 @@ Like any other project that is secured with Spring Security, a configuration cla
 
 ----
 
-In the property file we can now remove the security constraint that we defined since it's Spring Security that handles this now.
+In the property file we can now remove the security constraint (all properties that starts with` keycloak.security-constraints`) that we defined since it's Spring Security that handles this now.
+
 
 Restart the app and it should just work as before.
 
@@ -338,12 +339,13 @@ Instead of returning a hard coded product list, let's create a new application t
 
 * Download and unzip the latest WildFly distribution link:http://download.jboss.org/wildfly/10.1.0.Final/wildfly-10.1.0.Final.zip[here]
 * Download the Keycloak WildFly Adapter link:https://downloads.jboss.org/keycloak/3.1.0.Final/adapters/keycloak-oidc/keycloak-wildfly-adapter-dist-3.1.0.Final.zip[here]
-* Start the WildFly Server : `bin/standalone.sh -Djboss.socket.binding.port-offset=1`
 
 ==== Installing the WildFly Adapter
 
 * Unzip the Adapter Zip at the root of your WidlFly folder
 * Go to the `bin` folder and run : `jboss-cli.sh --file=adapter-install-offline.cli`
+* Start the WildFly Server : `WL_LOCATION/bin/standalone.sh -Djboss.socket.binding.port-offset=1`
+
 
 Your application server is now ready to host Keycloak Secured Application.
 
@@ -401,9 +403,9 @@ Now we need a descriptor for file, let's create it from our Keycloak Web Console
 
 image::images/bearer.png[]
 
-Now go to the `installation` tab and grab the `json` content.
+Now go to the `installation` tab and grab the `json` content (format = `Keycloak OIDC JSON`).
 
-Add this file to `src/main/webapp/WEB-INF`.
+Add this as content to a new `keycloak.json` file under `src/main/webapp/WEB-INF`.
 
 Now you can deploy your app to the application server :
 
