@@ -126,7 +126,8 @@ class ProductController {
 
 ----
 
-The final missing piece before you configure Keycloak is the product template (products.ftl), create this file in `sec/resources/templates` :
+The final missing piece before you configure Keycloak is the product template (`products.ftl`), create this file in `sec/resources/templates` :
+
 
 [source, html]
 ----
@@ -294,7 +295,8 @@ Like any other project that is secured with Spring Security, a configuration cla
 
 ----
 
-In the property file we can now remove the security constraint that we defined since it's Spring Security that handles this now.
+In the property file we can now remove the security constraint (all properties that starts with` keycloak.security-constraints`) that we defined since it's Spring Security that handles this now.
+
 
 Restart the app and it should just work as before.
 
