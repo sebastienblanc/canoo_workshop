@@ -126,7 +126,7 @@ class ProductController {
 
 ----
 
-The final missing piece before you configure Keycloak is the product template, create this file in `sec/resources/templates` :
+The final missing piece before you configure Keycloak is the product template (products.ftl), create this file in `sec/resources/templates` :
 
 [source, html]
 ----
