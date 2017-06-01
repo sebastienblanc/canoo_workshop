@@ -11,7 +11,7 @@ toc::[]
 
 == Installing the Keycloak Server
 
- * Grab a server binary link:http://www.keycloak.org/downloads.html[here]
+ * Grab a server binary link:http://www.keycloak.org/downloads.html[here] (Standalone Server)
  * Unzip it
  * Run it `KC_LOCATION/bin/standalone.sh -Djboss.socket.binding.port-offset=100`
 
